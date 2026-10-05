@@ -19,4 +19,4 @@ Saved tasks are local to this browser and device; they are not synced to other d
 
 ## Subnote
 
-This program was created in Visual Studio code using Artificial Intelligence
+This program was created in Visual Studio Code using Artificial Intelligence.
