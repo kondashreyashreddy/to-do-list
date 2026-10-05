@@ -16,3 +16,7 @@ Open `index.html` in a modern web browser. The app is self-contained, so it does
 Tasks and their completion status are saved automatically in the browser's local storage. They remain available when you reopen the app in the same browser, provided browser storage has not been cleared.
 
 Saved tasks are local to this browser and device; they are not synced to other devices or backed up. If browser storage is unavailable or saving fails, the app displays a notice. Changes in that case may be lost when you leave or reload the page.
+
+## Subnote
+
+This program was created in Visual Studio code using Artificial Intelligence
