@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b12">
+  <title>Task.exe — Neon task console</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", "Courier New", monospace;
+      background: #080b12;
+      color: #e8efff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #8491a8;
+      --panel: rgba(16, 21, 34, .88);
+      --line: rgba(148, 163, 184, .16);
+      --cyan: #43f5e8;
+      --violet: #b68aff;
+      --pink: #ff5bcb;
+      --green: #8dff9b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 14% 12%, rgba(25, 230, 224, .11), transparent 35rem),
+        radial-gradient(ellipse at 87% 82%, rgba(182, 80, 255, .12), transparent 32rem),
+        linear-gradient(rgba(76, 103, 149, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(76, 103, 149, .055) 1px, transparent 1px),
+        #080b12;
+      background-size: auto, auto, 36px 36px, 36px 36px, auto;
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 4px;
+    }
+
+    .shell {
+      width: min(100% - 36px, 760px);
+      margin: 0 auto;
+      padding: 48px 0 36px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      color: var(--muted);
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .online {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .online::before {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      content: "";
+    }
+
+    .hero { margin: 0 0 28px; }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--cyan);
+      font-size: .76rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      font-size: clamp(2.5rem, 8vw, 4.4rem);
+      font-weight: 800;
+      letter-spacing: -.065em;
+      line-height: 1;
+    }
+
+    h1 span {
+      color: transparent;
+      background: linear-gradient(100deg, #4bf5e6 4%, #7a8cff 32%, #d77bff 58%, #ff64bc 78%, #ffe16b 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(111, 115, 255, .22));
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      color: #9ca9be;
+      font-size: .94rem;
+      line-height: 1.6;
+    }
+
+    .console {
+      position: relative;
+      padding: 26px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .42), 0 0 42px rgba(63, 226, 226, .055);
+      backdrop-filter: blur(16px);
+    }
+
+    .console::before {
+      position: absolute;
+      top: 0;
+      right: 12%;
+      left: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), #aa79ff, var(--pink), transparent);
+      content: "";
+      opacity: .8;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: .92rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .counter {
+      padding: 7px 11px;
+      border: 1px solid rgba(67, 245, 232, .2);
+      border-radius: 999px;
+      background: rgba(67, 245, 232, .07);
+      color: var(--cyan);
+      font-size: .75rem;
+      white-space: nowrap;
+    }
+
+    .task-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .task-input {
+      width: 100%;
+      min-width: 0;
+      padding: 14px 16px;
+      border: 1px solid rgba(148, 163, 184, .2);
+      border-radius: 13px;
+      background: rgba(5, 8, 15, .72);
+      color: #f3f6ff;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .task-input::placeholder { color: #67748a; }
+    .task-input:focus { border-color: rgba(67, 245, 232, .7); box-shadow: 0 0 0 4px rgba(67, 245, 232, .08); }
+
+    .add-button, .delete-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .add-button {
+      flex: 0 0 auto;
+      gap: 8px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 13px;
+      background: linear-gradient(110deg, #43f5e8, #7e8eff 55%, #d77bff);
+      box-shadow: 0 7px 22px rgba(105, 127, 255, .23);
+      color: #091019;
+      font-weight: 800;
+    }
+
+    .add-button:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(105, 127, 255, .36); }
+    .add-button:active, .delete-button:active { transform: translateY(1px); }
+
+    .task-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 62px;
+      padding: 12px 12px 12px 15px;
+      border: 1px solid rgba(148, 163, 184, .13);
+      border-radius: 14px;
+      background: linear-gradient(110deg, rgba(30, 38, 57, .66), rgba(17, 22, 35, .72));
+      box-shadow: 0 6px 17px rgba(0, 0, 0, .14);
+      animation: appear .2s ease-out both;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toggle-button {
+      display: grid;
+      flex: 0 0 23px;
+      width: 23px;
+      height: 23px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(67, 245, 232, .62);
+      border-radius: 7px;
+      background: rgba(67, 245, 232, .04);
+      color: #081116;
+      cursor: pointer;
+      transition: background .18s ease, box-shadow .18s ease;
+    }
+
+    .toggle-button:hover { box-shadow: 0 0 14px rgba(67, 245, 232, .28); }
+    .toggle-button[aria-pressed="true"] { border-color: var(--green); background: var(--green); }
+
+    .task-text {
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      color: #e1e8f7;
+      font-size: .94rem;
+      line-height: 1.45;
+    }
+
+    .task-item.is-complete .task-text { color: #7f8b9e; text-decoration: line-through; text-decoration-color: #78859a; }
+
+    .delete-button {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: #8894a8;
+      font-size: 1.2rem;
+    }
+
+    .delete-button:hover {
+      border-color: rgba(255, 91, 133, .22);
+      background: rgba(255, 91, 133, .09);
+      box-shadow: 0 0 16px rgba(255, 91, 133, .12);
+      color: #ff829e;
+    }
+
+    .empty-state {
+      padding: 31px 18px;
+      border: 1px dashed rgba(148, 163, 184, .22);
+      border-radius: 14px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .empty-icon {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--violet);
+      font-size: 1.5rem;
+    }
+
+    .storage-message {
+      min-height: 1.3em;
+      margin: 14px 0 0;
+      color: #ffca79;
+      font-size: .76rem;
+      line-height: 1.5;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 17px;
+      color: #647188;
+      font-size: .7rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 24px, 760px); padding-top: 28px; }
+      .console { padding: 19px 15px; border-radius: 18px; }
+      .task-form { align-items: stretch; gap: 8px; }
+      .task-input { padding-inline: 12px; font-size: .88rem; }
+      .add-button { gap: 0; width: 48px; padding: 0; font-size: 0; }
+      .add-button::after { content: "+"; font-size: 1.45rem; line-height: 1; }
+      .topline { font-size: .64rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topline">
+      <span>SYS // PERSONAL WORKSPACE</span>
+      <span class="online">LOCAL MODE</span>
+    </div>
+
+    <header class="hero">
+      <p class="eyebrow">[ your focus, upgraded ]</p>
+      <h1><span>Task.exe</span></h1>
+      <p class="subtitle">A little order in the chaos. Add a task, lock it in, and make progress.</p>
+    </header>
+
+    <section class="console" aria-labelledby="list-heading">
+      <div class="section-heading">
+        <h2 id="list-heading">/// Mission queue</h2>
+        <span class="counter" id="task-counter" aria-live="polite">0 ACTIVE</span>
+      </div>
+
+      <form class="task-form" id="task-form">
+        <label class="visually-hidden" for="task-input">New task</label>
+        <input class="task-input" id="task-input" name="task" type="text" maxlength="240" placeholder="Type a task to add to your queue..." autocomplete="off" required>
+        <button class="add-button" type="submit">Add task</button>
+      </form>
+
+      <ul class="task-list" id="task-list" aria-label="Your tasks"></ul>
+      <p class="storage-message" id="storage-message" role="status" aria-live="polite"></p>
+    </section>
+
+    <footer class="footer">
+      <span>Progress saved in this browser</span>
+      <span>Stay curious_</span>
+    </footer>
+  </main>
+
+  <style>
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "task-exe.tasks.v1";
+      const form = document.querySelector("#task-form");
+      const input = document.querySelector("#task-input");
+      const list = document.querySelector("#task-list");
+      const counter = document.querySelector("#task-counter");
+      const message = document.querySelector("#storage-message");
+      let tasks = [];
+      let storageReadable = true;
+
+      function isTask(value) {
+        return value !== null
+          && typeof value === "object"
+          && typeof value.id === "string"
+          && typeof value.text === "string"
+          && typeof value.completed === "boolean";
+      }
+
+      function loadTasks() {
+        let saved;
+        try {
+          saved = localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+          storageReadable = false;
+          message.textContent = "Browser storage is unavailable. Tasks will work for this visit but may not be saved.";
+          return;
+        }
+
+        if (saved === null) return;
+
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.version === 1 && Array.isArray(parsed.tasks) && parsed.tasks.every(isTask)) {
+            tasks = parsed.tasks;
+          } else {
+            storageReadable = false;
+            message.textContent = "Saved task data has an unexpected format. Your current session starts with an empty list.";
+          }
+        } catch (error) {
+          storageReadable = false;
+          message.textContent = "Saved task data could not be read. Your current session starts with an empty list.";
+        }
+      }
+
+      function saveTasks() {
+        if (!storageReadable) {
+          message.textContent = "Changes are only available for this visit because saved browser data could not be read.";
+          return;
+        }
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tasks }));
+          message.textContent = "";
+        } catch (error) {
+          storageReadable = false;
+          message.textContent = "Could not save changes to browser storage. Your tasks remain visible until you leave this page.";
+        }
+      }
+
+      function renderTasks() {
+        list.replaceChildren();
+        const activeCount = tasks.filter((task) => !task.completed).length;
+        counter.textContent = `${activeCount} ACTIVE`;
+
+        if (tasks.length === 0) {
+          const empty = document.createElement("li");
+          empty.className = "empty-state";
+          empty.innerHTML = '<span class="empty-icon" aria-hidden="true">⌁</span>Your queue is clear.<br>Drop in a task to start your next mission.';
+          list.append(empty);
+          return;
+        }
+
+        for (const task of tasks) {
+          const item = document.createElement("li");
+          item.className = `task-item${task.completed ? " is-complete" : ""}`;
+
+          const toggle = document.createElement("button");
+          toggle.className = "toggle-button";
+          toggle.type = "button";
+          toggle.setAttribute("aria-pressed", String(task.completed));
+          toggle.setAttribute("aria-label", `${task.completed ? "Reopen" : "Complete"} task: ${task.text}`);
+          toggle.textContent = task.completed ? "✓" : "";
+          toggle.addEventListener("click", () => {
+            task.completed = !task.completed;
+            saveTasks();
+            renderTasks();
+          });
+
+          const text = document.createElement("span");
+          text.className = "task-text";
+          text.textContent = task.text;
+
+          const remove = document.createElement("button");
+          remove.className = "delete-button";
+          remove.type = "button";
+          remove.setAttribute("aria-label", `Delete task: ${task.text}`);
+          remove.textContent = "×";
+          remove.addEventListener("click", () => {
+            tasks = tasks.filter((current) => current.id !== task.id);
+            saveTasks();
+            renderTasks();
+          });
+
+          item.append(toggle, text, remove);
+          list.append(item);
+        }
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) {
+          input.focus();
+          return;
+        }
+
+        const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        tasks.unshift({ id, text, completed: false });
+        saveTasks();
+        renderTasks();
+        form.reset();
+        input.focus();
+      });
+
+      loadTasks();
+      renderTasks();
+    })();
+  </script>
+</body>
+</html>
